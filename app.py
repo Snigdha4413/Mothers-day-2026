@@ -1,351 +1,290 @@
-<!DOCTYPE html>
+import streamlit as st
+import base64
+from streamlit.components.v1 import html as st_html
+
+with open("mothers_day_storybook.html", "r") as f:
+    BOOK_HTML = f.read()
+
+st.set_page_config(page_title="Mother's Day Book", layout="centered")
+st_html(BOOK_HTML, height=800, scrolling=False)
+st.set_page_config(
+    page_title="A Fairytale Mother's Day Book",
+    page_icon="🌙",
+    layout="centered",
+)
+
+# ── Minimal host-page styling (just background + hide chrome) ─────────────────
+st.markdown("""
+<style>
+body, .stApp { background: #1a0d2e !important; }
+#MainMenu, footer, header { visibility: hidden; }
+.block-container { padding: 0.5rem 1rem !important; max-width: 700px; }
+label[data-testid="stWidgetLabel"] p {
+  color: rgba(240,210,140,0.75) !important; font-size: 13px; letter-spacing: 2px;
+}
+.stTextInput > div > div > input {
+  background: rgba(255,255,255,0.08) !important;
+  border: 1px solid rgba(184,136,42,0.5) !important;
+  border-radius: 30px !important;
+  color: #f5dfa0 !important;
+  text-align: center !important;
+}
+.stFileUploader > div {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px dashed rgba(184,136,42,0.4) !important;
+  border-radius: 10px !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ── Inputs above the book ─────────────────────────────────────────────────────
+col_name, col_photo = st.columns([3, 2])
+with col_name:
+    mum_name = st.text_input("HER NAME", placeholder="her name…", max_chars=20)
+with col_photo:
+    photo_file = st.file_uploader("ADD A PHOTO", type=["png", "jpg", "jpeg"])
+
+display_name = mum_name.strip() if mum_name.strip() else "Mum"
+
+# ── Photo → base64 ────────────────────────────────────────────────────────────
+photo_b64 = ""
+photo_mime = "image/jpeg"
+if photo_file:
+    photo_b64 = base64.b64encode(photo_file.read()).decode()
+    photo_mime = photo_file.type
+
+photo_html = (
+    f'<div class="cover-photo-wrap">'
+    f'<img src="data:{photo_mime};base64,{photo_b64}"/>'
+    f'</div>'
+    if photo_b64 else ""
+)
+
+# ── Full self-contained HTML book ─────────────────────────────────────────────
+# Rendered via st_html (components.v1.html) which uses an iframe — so <style>
+# and @keyframes are NEVER stripped by Streamlit's markdown sanitiser.
+
+BOOK_HTML = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>A Fairytale Mother's Day Book</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,600&family=Dancing+Script:wght@400;700&family=IM+Fell+English:ital@0;1&display=swap');
 
-* { margin:0; padding:0; box-sizing:border-box; }
-:root {
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+:root {{
   --rose:#c8506a; --gold:#b8882a; --parchment:#f9f1e2;
-  --ink:#2d1a0e; --sage:#5a7a52; --lavender:#7a68a8; --midnight:#1a0d2e;
-}
+  --ink:#2d1a0e;  --sage:#5a7a52; --lavender:#7a68a8; --midnight:#1a0d2e;
+}}
+html,body {{ background:#1a0d2e; margin:0; padding:0; }}
 
-html, body {
-  background: #1a0d2e;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  touch-action: pan-y;
-}
-
-/* ── PHOTO URL OVERLAY ─────────────────────────────────────────────────── */
-#photo-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(10,4,20,0.92);
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  padding: 32px 24px;
-}
-#photo-overlay h2 {
-  font-family: 'Dancing Script', cursive;
-  font-size: 28px;
-  color: #f5dfa0;
-  text-align: center;
-}
-#photo-overlay p {
-  font-family: 'IM Fell English', serif;
-  font-style: italic;
-  font-size: 13px;
-  color: rgba(240,210,140,0.65);
-  text-align: center;
-  line-height: 1.8;
-  max-width: 300px;
-}
-#photo-url-input {
-  width: 100%;
-  max-width: 340px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(184,136,42,0.5);
-  border-radius: 30px;
-  color: #f5dfa0;
-  font-family: 'IM Fell English', serif;
-  font-size: 14px;
-  padding: 12px 20px;
-  text-align: center;
-  outline: none;
-}
-#photo-url-input::placeholder { color: rgba(240,210,140,0.3); }
-.overlay-btn {
-  background: rgba(184,136,42,0.18);
-  border: 1px solid rgba(184,136,42,0.5);
-  border-radius: 30px;
-  color: #f5dfa0;
-  font-family: 'Dancing Script', cursive;
-  font-size: 18px;
-  padding: 10px 34px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.overlay-btn:active { background: rgba(184,136,42,0.32); }
-.skip-btn {
-  background: none;
-  border: none;
-  color: rgba(240,210,140,0.35);
-  font-family: 'IM Fell English', serif;
-  font-style: italic;
-  font-size: 13px;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-/* ── HOW-TO NOTE ──────────────────────────────────────────────────────── */
-.howto {
-  background: rgba(184,136,42,0.08);
-  border: 1px solid rgba(184,136,42,0.2);
-  border-radius: 10px;
-  padding: 12px 16px;
-  max-width: 340px;
-  width: 100%;
-}
-.howto p { color: rgba(240,210,140,0.55); font-size: 12px; text-align: left; }
-.howto strong { color: rgba(240,210,140,0.75); font-style: normal; }
-
-/* ── BOOK SHELL ───────────────────────────────────────────────────────── */
-#book-shell {
-  width: 100vw;
-  height: 100dvh;
-  background: #1a0d2e;
-  overflow: hidden;
-  position: relative;
-  font-family: 'IM Fell English', serif;
-}
-#strip-wrap {
-  width: 100%;
-  height: calc(100dvh - 56px); /* leave room for nav */
-  overflow: hidden;
-  position: relative;
-}
-#strip {
-  display: flex;
-  flex-direction: row;
-  height: 100%;
-  transition: transform 0.6s cubic-bezier(0.77,0,0.18,1);
-  will-change: transform;
-}
-.page {
-  flex: 0 0 100%;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-}
-/* scrollbar hidden */
-.page::-webkit-scrollbar { display: none; }
-.page { -ms-overflow-style: none; scrollbar-width: none; }
+#book-shell {{
+  width:100%; min-height:580px; background:#1a0d2e;
+  border-radius:16px; overflow:hidden; position:relative;
+  font-family:'IM Fell English',serif;
+}}
+#strip-wrap {{ width:100%; height:580px; overflow:hidden; position:relative; }}
+#strip {{
+  display:flex; flex-direction:row; height:100%;
+  transition:transform 0.6s cubic-bezier(0.77,0,0.18,1); will-change:transform;
+}}
+.page {{
+  flex:0 0 100%; width:100%; height:580px;
+  overflow-y:auto; overflow-x:hidden; position:relative;
+  display:flex; flex-direction:column; align-items:center; padding-bottom:60px;
+}}
 
 /* PAGE THEMES */
-.pg-cover  { background: radial-gradient(ellipse at 50% 55%,#2d1050 0%,#1a0d2e 65%,#0d0618 100%); }
-.pg-p1     { background: linear-gradient(170deg,#1f0a30 0%,#3d1850 45%,#1a0d2e 100%); }
-.pg-p2     { background: linear-gradient(160deg,#0d2010 0%,#1a4025 50%,#0d2010 100%); }
-.pg-p3     { background: linear-gradient(165deg,#1a1030 0%,#2e1848 50%,#1a0820 100%); }
-.pg-p4     { background: linear-gradient(160deg,#0d1a28 0%,#1a3048 50%,#0d1520 100%); }
-.pg-final  { background: radial-gradient(ellipse at 50% 40%,#2d1050 0%,#1a0d2e 70%); }
+.pg-cover {{ background:radial-gradient(ellipse at 50% 55%,#2d1050 0%,#1a0d2e 65%,#0d0618 100%); }}
+.pg-p1    {{ background:linear-gradient(170deg,#1f0a30 0%,#3d1850 45%,#1a0d2e 100%); }}
+.pg-p2    {{ background:linear-gradient(160deg,#0d2010 0%,#1a4025 50%,#0d2010 100%); }}
+.pg-p3    {{ background:linear-gradient(165deg,#1a1030 0%,#2e1848 50%,#1a0820 100%); }}
+.pg-p4    {{ background:linear-gradient(160deg,#0d1a28 0%,#1a3048 50%,#0d1520 100%); }}
+.pg-final {{ background:radial-gradient(ellipse at 50% 40%,#2d1050 0%,#1a0d2e 70%); }}
 
 /* COVER */
-.cover-frame {
-  position: absolute; inset: 10px;
-  border: 1px solid rgba(184,136,42,0.4);
-  border-radius: 10px; pointer-events: none;
-  animation: glimmer 4s ease-in-out infinite alternate;
-}
-@keyframes glimmer {
-  from { border-color:rgba(184,136,42,0.2); box-shadow:inset 0 0 40px rgba(184,136,42,0.03); }
-  to   { border-color:rgba(184,136,42,0.6); box-shadow:inset 0 0 80px rgba(184,136,42,0.07); }
-}
-.cover-content {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-height: 100%; width: 100%; padding: 44px 28px 80px;
-  text-align: center; gap: 10px; position: relative; z-index: 2;
-}
-.cover-eye {
-  font-size: 56px; animation: breathe 3s ease-in-out infinite;
-  filter: drop-shadow(0 0 18px rgba(200,160,60,0.5));
-}
-@keyframes breathe { 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
-.cover-subtitle {
-  font-family: 'Dancing Script', cursive; font-size: 15px; letter-spacing: 4px;
-  text-transform: uppercase; color: rgba(240,210,140,0.75);
-}
-.cover-photo-wrap {
-  display: flex; flex-direction: column; align-items: center; margin: 6px 0;
-}
-.cover-photo-wrap img {
-  width: 120px; height: 120px; object-fit: cover; border-radius: 50%;
-  border: 3px solid #b8882a;
-  box-shadow: 0 0 28px rgba(184,136,42,0.6), 0 0 60px rgba(184,136,42,0.25);
-}
-.cover-title {
-  font-family: 'Playfair Display', serif;
-  font-size: clamp(30px,8vw,50px);
-  font-style: italic; font-weight: 700; color: #f9f1e2; line-height: 1.1;
-  text-shadow: 0 0 40px rgba(200,100,130,0.4);
-}
-.cover-title em { color: #e0807a; font-style: normal; }
-.cover-rule {
-  width: 80px; height: 1px;
-  background: linear-gradient(90deg,transparent,rgba(184,136,42,0.8),transparent);
-}
-.cover-tagline {
-  font-family: 'IM Fell English', serif; font-style: italic; font-size: 14px;
-  color: rgba(240,210,160,0.7); max-width: 280px; line-height: 1.8;
-}
-.turn-hint {
-  position: absolute; bottom: 68px; right: 22px;
-  font-family: 'Dancing Script', cursive; font-size: 13px;
-  color: rgba(240,210,140,0.5); display: flex; align-items: center; gap: 6px;
-  animation: nudge 2s ease-in-out infinite;
-}
-@keyframes nudge { 0%,100%{transform:translateX(0);} 50%{transform:translateX(4px);} }
+.cover-frame {{
+  position:absolute; inset:12px; border:1px solid rgba(184,136,42,0.4);
+  border-radius:10px; pointer-events:none;
+  animation:glimmer 4s ease-in-out infinite alternate;
+}}
+@keyframes glimmer {{
+  from {{ border-color:rgba(184,136,42,0.2); box-shadow:inset 0 0 40px rgba(184,136,42,0.03); }}
+  to   {{ border-color:rgba(184,136,42,0.6); box-shadow:inset 0 0 80px rgba(184,136,42,0.07); }}
+}}
+.cover-content {{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  min-height:580px; width:100%; padding:40px 28px 70px;
+  text-align:center; gap:10px; position:relative; z-index:2;
+}}
+.cover-eye {{
+  font-size:56px; animation:breathe 3s ease-in-out infinite;
+  filter:drop-shadow(0 0 18px rgba(200,160,60,0.5));
+}}
+@keyframes breathe {{ 0%,100%{{transform:scale(1);}} 50%{{transform:scale(1.08);}} }}
+.cover-subtitle {{
+  font-family:'Dancing Script',cursive; font-size:15px; letter-spacing:4px;
+  text-transform:uppercase; color:rgba(240,210,140,0.75);
+}}
+.cover-name-display {{
+  font-family:'Dancing Script',cursive; font-size:22px; color:#f5dfa0;
+}}
+.cover-photo-wrap {{
+  display:flex; flex-direction:column; align-items:center; margin:6px 0;
+}}
+.cover-photo-wrap img {{
+  width:120px; height:120px; object-fit:cover; border-radius:50%;
+  border:3px solid #b8882a;
+  box-shadow:0 0 28px rgba(184,136,42,0.6),0 0 60px rgba(184,136,42,0.25);
+}}
+.cover-title {{
+  font-family:'Playfair Display',serif; font-size:clamp(30px,7vw,50px);
+  font-style:italic; font-weight:700; color:#f9f1e2; line-height:1.1;
+  text-shadow:0 0 40px rgba(200,100,130,0.4);
+}}
+.cover-title em {{ color:#e0807a; font-style:normal; }}
+.cover-rule {{
+  width:80px; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(184,136,42,0.8),transparent);
+}}
+.cover-tagline {{
+  font-family:'IM Fell English',serif; font-style:italic; font-size:14px;
+  color:rgba(240,210,160,0.7); max-width:280px; line-height:1.8;
+}}
+.turn-hint {{
+  position:absolute; bottom:18px; right:22px;
+  font-family:'Dancing Script',cursive; font-size:13px;
+  color:rgba(240,210,140,0.5); display:flex; align-items:center; gap:6px;
+  animation:nudge 2s ease-in-out infinite;
+}}
+@keyframes nudge {{ 0%,100%{{transform:translateX(0);}} 50%{{transform:translateX(4px);}} }}
 
 /* INNER PAGES */
-.page-inner {
-  max-width: 500px; width: 100%; display: flex; flex-direction: column;
-  align-items: center; gap: 16px; text-align: center; padding: 36px 20px 80px;
-  opacity: 0; transform: translateY(24px);
-  transition: opacity 0.7s ease, transform 0.7s ease;
-}
-.page-inner.vis { opacity: 1; transform: translateY(0); }
-.pg-label   { font-family:'Dancing Script',cursive; font-size:13px; color:rgba(240,210,140,0.45); letter-spacing:3px; }
-.pg-chapter { font-family:'Dancing Script',cursive; font-size:22px; color:#d4836a; letter-spacing:1px; }
-.pg-heading { font-family:'Playfair Display',serif; font-size:clamp(20px,5vw,28px); font-style:italic; font-weight:400; color:#f0ddb8; line-height:1.25; }
-.pg-heading em { color:#d4836a; font-style:normal; }
-.ornament   { font-size:14px; color:rgba(184,136,42,0.7); letter-spacing:8px; }
-.pg-text    { font-family:'IM Fell English',serif; font-size:15px; font-style:italic; line-height:1.9; color:rgba(240,220,180,0.82); font-weight:400; }
-.pg-text strong { color:#e0a060; font-style:normal; }
+.page-inner {{
+  max-width:480px; width:100%; display:flex; flex-direction:column;
+  align-items:center; gap:16px; text-align:center; padding:40px 22px 16px;
+  opacity:0; transform:translateY(24px); transition:opacity 0.7s ease,transform 0.7s ease;
+}}
+.page-inner.vis {{ opacity:1; transform:translateY(0); }}
+.pg-label   {{ font-family:'Dancing Script',cursive; font-size:13px; color:rgba(240,210,140,0.45); letter-spacing:3px; }}
+.pg-chapter {{ font-family:'Dancing Script',cursive; font-size:22px; color:#d4836a; letter-spacing:1px; }}
+.pg-heading {{ font-family:'Playfair Display',serif; font-size:clamp(20px,4vw,28px); font-style:italic; font-weight:400; color:#f0ddb8; line-height:1.25; }}
+.pg-heading em {{ color:#d4836a; font-style:normal; }}
+.ornament   {{ font-size:14px; color:rgba(184,136,42,0.7); letter-spacing:8px; }}
+.pg-text    {{ font-family:'IM Fell English',serif; font-size:15px; font-style:italic; line-height:1.9; color:rgba(240,220,180,0.82); font-weight:400; }}
+.pg-text strong {{ color:#e0a060; font-style:normal; }}
 
 /* STORY CARD */
-.story-card {
-  background: rgba(240,230,200,0.07); border: 1px solid rgba(184,136,42,0.25);
-  border-radius: 10px; padding: 20px 22px; width: 100%; position: relative;
-}
-.story-card::before {
-  content: '"'; position: absolute; top: -6px; left: 14px;
-  font-family: 'Playfair Display', serif; font-size: 48px;
-  color: rgba(200,80,106,0.18); line-height: 1;
-}
+.story-card {{
+  background:rgba(240,230,200,0.07); border:1px solid rgba(184,136,42,0.25);
+  border-radius:10px; padding:20px 22px; width:100%; position:relative;
+}}
+.story-card::before {{
+  content:'"'; position:absolute; top:-6px; left:14px;
+  font-family:'Playfair Display',serif; font-size:48px;
+  color:rgba(200,80,106,0.18); line-height:1;
+}}
 
 /* PARCHMENT LETTER */
-.letter {
-  background: rgba(249,241,226,0.08); border: 1px solid rgba(184,136,42,0.3);
-  border-radius: 4px; padding: 24px 22px; width: 100%;
-  font-family: 'IM Fell English', serif; font-style: italic; font-size: 15px;
-  line-height: 1.95; color: rgba(240,220,180,0.85);
-}
-.letter::after { content:'❧'; display:block; text-align:right; font-size:16px; color:#c8506a; margin-top:10px; }
-.letter strong { color:#e0a060; font-style:normal; }
+.letter {{
+  background:rgba(249,241,226,0.08); border:1px solid rgba(184,136,42,0.3);
+  border-radius:4px; padding:24px 22px; width:100%;
+  font-family:'IM Fell English',serif; font-style:italic; font-size:15px;
+  line-height:1.95; color:rgba(240,220,180,0.85);
+}}
+.letter::after {{ content:'❧'; display:block; text-align:right; font-size:16px; color:#c8506a; margin-top:10px; }}
+.letter strong {{ color:#e0a060; font-style:normal; }}
 
 /* SVG SCENE */
-.scene { width:100%; max-width:420px; border-radius:14px; overflow:hidden; box-shadow:0 4px 28px rgba(0,0,0,0.5); cursor:default; flex-shrink:0; }
-.scene svg { display:block; width:100%; height:auto; }
-.tap-label { font-family:'Dancing Script',cursive; font-size:12px; color:rgba(240,210,140,0.4); letter-spacing:1px; margin-top:-8px; }
+.scene {{ width:100%; max-width:400px; border-radius:14px; overflow:hidden; box-shadow:0 4px 28px rgba(0,0,0,0.5); cursor:default; flex-shrink:0; }}
+.scene svg {{ display:block; width:100%; height:auto; }}
+.tap-label {{ font-family:'Dancing Script',cursive; font-size:12px; color:rgba(240,210,140,0.4); letter-spacing:1px; margin-top:-8px; }}
 
 /* TAP ANIMATIONS */
-.sparkle { animation:sparkleAnim 0.6s ease forwards; }
-@keyframes sparkleAnim {
-  0%  {transform:scale(1) rotate(0deg);}
-  30% {transform:scale(1.5) rotate(15deg);filter:brightness(2);}
-  70% {transform:scale(0.9) rotate(-8deg);filter:brightness(1.5);}
-  100%{transform:scale(1) rotate(0deg);filter:brightness(1);}
-}
-.bloom { animation:bloomAnim 0.7s ease forwards; }
-@keyframes bloomAnim {
-  0%  {transform:scale(0.4) rotate(-30deg);opacity:0.3;}
-  55% {transform:scale(1.25) rotate(8deg);opacity:1;}
-  100%{transform:scale(1) rotate(0deg);opacity:1;}
-}
-.float-up { animation:floatUpAnim 0.9s ease forwards; }
-@keyframes floatUpAnim {
-  0%  {transform:translateY(0) rotate(0deg);opacity:1;}
-  100%{transform:translateY(-36px) rotate(25deg);opacity:0;}
-}
-.wiggle { animation:wiggleAnim 0.5s ease forwards; }
-@keyframes wiggleAnim {
-  0%  {transform:rotate(0deg);}
-  25% {transform:rotate(-12deg) scale(1.1);}
-  50% {transform:rotate(12deg) scale(1.15);}
-  75% {transform:rotate(-6deg) scale(1.05);}
-  100%{transform:rotate(0deg) scale(1);}
-}
-.pulse { animation:pulseAnim 0.5s ease forwards; }
-@keyframes pulseAnim {
-  0%  {transform:scale(1);}
-  40% {transform:scale(1.35);filter:brightness(1.6) drop-shadow(0 0 8px gold);}
-  100%{transform:scale(1);filter:brightness(1);}
-}
+.sparkle   {{ animation:sparkleAnim 0.6s ease forwards; }}
+@keyframes sparkleAnim {{
+  0%   {{ transform:scale(1) rotate(0deg); }}
+  30%  {{ transform:scale(1.5) rotate(15deg); filter:brightness(2); }}
+  70%  {{ transform:scale(0.9) rotate(-8deg); filter:brightness(1.5); }}
+  100% {{ transform:scale(1) rotate(0deg); filter:brightness(1); }}
+}}
+.bloom {{ animation:bloomAnim 0.7s ease forwards; }}
+@keyframes bloomAnim {{
+  0%   {{ transform:scale(0.4) rotate(-30deg); opacity:0.3; }}
+  55%  {{ transform:scale(1.25) rotate(8deg); opacity:1; }}
+  100% {{ transform:scale(1) rotate(0deg); opacity:1; }}
+}}
+.float-up {{ animation:floatUpAnim 0.9s ease forwards; }}
+@keyframes floatUpAnim {{
+  0%   {{ transform:translateY(0) rotate(0deg); opacity:1; }}
+  100% {{ transform:translateY(-36px) rotate(25deg); opacity:0; }}
+}}
+.wiggle {{ animation:wiggleAnim 0.5s ease forwards; }}
+@keyframes wiggleAnim {{
+  0%   {{ transform:rotate(0deg); }}
+  25%  {{ transform:rotate(-12deg) scale(1.1); }}
+  50%  {{ transform:rotate(12deg) scale(1.15); }}
+  75%  {{ transform:rotate(-6deg) scale(1.05); }}
+  100% {{ transform:rotate(0deg) scale(1); }}
+}}
+.pulse {{ animation:pulseAnim 0.5s ease forwards; }}
+@keyframes pulseAnim {{
+  0%   {{ transform:scale(1); }}
+  40%  {{ transform:scale(1.35); filter:brightness(1.6) drop-shadow(0 0 8px gold); }}
+  100% {{ transform:scale(1); filter:brightness(1); }}
+}}
 
 /* ATTRIBS */
-.attribs { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; list-style:none; }
-.attribs li {
+.attribs {{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; list-style:none; }}
+.attribs li {{
   background:rgba(240,230,200,0.1); border:1px solid rgba(184,136,42,0.3);
   border-radius:30px; padding:5px 14px;
   font-family:'IM Fell English',serif; font-size:13px; font-style:italic;
   color:rgba(240,220,180,0.8);
-}
+}}
 
 /* FINAL PAGE */
-.final-heading { font-family:'Playfair Display',serif; font-size:clamp(22px,5vw,34px); font-style:italic; color:#f9f1e2; line-height:1.2; }
-.final-heading .mum-name { color:#e0807a; }
-.big-heart {
+.final-heading {{ font-family:'Playfair Display',serif; font-size:clamp(22px,5vw,34px); font-style:italic; color:#f9f1e2; line-height:1.2; }}
+.final-heading .mum-name {{ color:#e0807a; }}
+.big-heart {{
   font-size:72px; animation:heartbeat 1.5s ease-in-out infinite;
   filter:drop-shadow(0 0 24px rgba(200,80,100,0.7));
-}
-@keyframes heartbeat { 0%,100%{transform:scale(1);} 15%{transform:scale(1.12);} 30%{transform:scale(1);} 45%{transform:scale(1.06);} }
-.signature { font-family:'Dancing Script',cursive; font-size:26px; color:#b8882a; margin-top:4px; }
-.sparkle-row { display:flex; gap:10px; justify-content:center; font-size:22px; }
+}}
+@keyframes heartbeat {{ 0%,100%{{transform:scale(1);}} 15%{{transform:scale(1.12);}} 30%{{transform:scale(1);}} 45%{{transform:scale(1.06);}} }}
+.signature {{ font-family:'Dancing Script',cursive; font-size:26px; color:#b8882a; margin-top:4px; }}
+.sparkle-row {{ display:flex; gap:10px; justify-content:center; font-size:22px; }}
 
 /* STARS */
-#stars { position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
-.star { position:absolute; border-radius:50%; animation:twinkle ease-in-out infinite; }
-@keyframes twinkle { 0%,100%{opacity:0.1;transform:scale(1);} 50%{opacity:0.9;transform:scale(1.4);} }
+#stars {{ position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden; }}
+.star {{ position:absolute; border-radius:50%; animation:twinkle ease-in-out infinite; }}
+@keyframes twinkle {{ 0%,100%{{opacity:0.1;transform:scale(1);}} 50%{{opacity:0.9;transform:scale(1.4);}} }}
 
 /* NAV */
-#nav {
-  display: flex; align-items: center; justify-content: center; gap: 14px;
-  height: 56px; padding: 0 16px;
-  background: linear-gradient(to top,rgba(10,4,20,0.98),rgba(10,4,20,0.7));
-  position: relative; z-index: 20;
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
-.nav-btn {
-  background: rgba(255,255,255,0.08); border: 1px solid rgba(184,136,42,0.4);
-  border-radius: 50%; width: 40px; height: 40px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; cursor: pointer; color: #f5dfa0;
-  transition: background 0.2s, transform 0.15s, opacity 0.3s; user-select: none;
-}
-.nav-btn:hover  { background:rgba(184,136,42,0.18); transform:scale(1.1); }
-.nav-btn:active { transform:scale(0.92); }
-.nav-btn[disabled] { opacity:0.2; pointer-events:none; }
-.dots { display:flex; gap:7px; align-items:center; }
-.dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.25); transition:background 0.3s,transform 0.3s; cursor:pointer; }
-.dot.on { background:#b8882a; transform:scale(1.4); }
+#nav {{
+  display:flex; align-items:center; justify-content:center; gap:14px;
+  padding:10px 16px 12px;
+  background:linear-gradient(to top,rgba(10,4,20,0.95),transparent);
+  position:absolute; bottom:0; left:0; right:0; z-index:20;
+}}
+.nav-btn {{
+  background:rgba(255,255,255,0.08); border:1px solid rgba(184,136,42,0.4);
+  border-radius:50%; width:40px; height:40px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; cursor:pointer; color:#f5dfa0;
+  transition:background 0.2s,transform 0.15s,opacity 0.3s; user-select:none;
+}}
+.nav-btn:hover {{ background:rgba(184,136,42,0.18); transform:scale(1.1); }}
+.nav-btn:active {{ transform:scale(0.92); }}
+.nav-btn[disabled] {{ opacity:0.2; pointer-events:none; }}
+.dots {{ display:flex; gap:7px; align-items:center; }}
+.dot {{ width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.25); transition:background 0.3s,transform 0.3s; cursor:pointer; }}
+.dot.on {{ background:#b8882a; transform:scale(1.4); }}
 </style>
 </head>
 <body>
 
-<!-- PHOTO URL OVERLAY -->
-<div id="photo-overlay">
-  <h2>🌙 Add a Photo</h2>
-  <p>Paste a Google Photos (or any image) link below to show her photo in the book.</p>
-
-  <div class="howto">
-    <p><strong>How to get a Google Photos link:</strong><br/>
-    Open the photo → tap ⋮ menu → <em>Share</em> → <em>Create link</em> → copy it here.<br/><br/>
-    Or paste any direct image URL ending in <em>.jpg / .png / .webp</em></p>
-  </div>
-
-  <input id="photo-url-input" type="url" placeholder="https://photos.app.goo.gl/…  or direct image URL"/>
-  <button class="overlay-btn" onclick="applyPhoto()">✦ Open the Book ✦</button>
-  <button class="skip-btn" onclick="skipPhoto()">skip — open without photo</button>
-</div>
-
-<!-- BOOK -->
-<div id="book-shell" style="display:none">
+<div id="book-shell">
   <div id="stars"></div>
   <div id="strip-wrap">
   <div id="strip">
@@ -356,8 +295,8 @@ html, body {
     <div class="cover-content">
       <div class="cover-eye" onclick="tap(this,'pulse')" style="cursor:pointer">🌙</div>
       <div class="cover-subtitle">A Fairytale For</div>
-      <div class="cover-subtitle" style="font-size:18px; color:#f5dfa0; letter-spacing:2px;">✦ Mum ✦</div>
-      <div id="cover-photo"></div>
+      <div class="cover-name-display">✦ {display_name} ✦</div>
+      {photo_html}
       <h1 class="cover-title">Happy<br/><em>Mother's</em> Day</h1>
       <div class="cover-rule"></div>
       <p class="cover-tagline">Once upon a time, a mother made the whole world magical.</p>
@@ -376,7 +315,8 @@ html, body {
         <svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <radialGradient id="mg1" cx="50%" cy="30%" r="55%">
-              <stop offset="0%" stop-color="#4a1a70"/><stop offset="100%" stop-color="#1a0830"/>
+              <stop offset="0%" stop-color="#4a1a70"/>
+              <stop offset="100%" stop-color="#1a0830"/>
             </radialGradient>
           </defs>
           <rect width="400" height="220" fill="url(#mg1)"/>
@@ -482,7 +422,8 @@ html, body {
         <svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <radialGradient id="mg2" cx="50%" cy="50%" r="70%">
-              <stop offset="0%" stop-color="#0d2818"/><stop offset="100%" stop-color="#060e08"/>
+              <stop offset="0%" stop-color="#0d2818"/>
+              <stop offset="100%" stop-color="#060e08"/>
             </radialGradient>
           </defs>
           <rect width="400" height="220" fill="url(#mg2)"/>
@@ -586,7 +527,8 @@ html, body {
         <svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <radialGradient id="mg3" cx="50%" cy="40%" r="65%">
-              <stop offset="0%" stop-color="#1a0838"/><stop offset="100%" stop-color="#08040e"/>
+              <stop offset="0%" stop-color="#1a0838"/>
+              <stop offset="100%" stop-color="#08040e"/>
             </radialGradient>
           </defs>
           <rect width="400" height="220" fill="url(#mg3)"/>
@@ -596,13 +538,34 @@ html, body {
           <line x1="260" y1="90" x2="320" y2="55" stroke="rgba(180,160,220,0.25)" stroke-width="1"/>
           <line x1="140" y1="80" x2="160" y2="120" stroke="rgba(180,160,220,0.2)" stroke-width="1"/>
           <line x1="200" y1="60" x2="220" y2="110" stroke="rgba(180,160,220,0.2)" stroke-width="1"/>
-          <g style="cursor:pointer;transform-origin:80px 50px" onclick="tapSvg(this,'pulse')"><circle cx="80" cy="50" r="5" fill="#ffd580" opacity="0.95"/><circle cx="80" cy="50" r="9" fill="#ffd580" opacity="0.2"/></g>
-          <g style="cursor:pointer;transform-origin:140px 80px" onclick="tapSvg(this,'pulse')"><circle cx="140" cy="80" r="6" fill="#c9b8e8" opacity="0.95"/><circle cx="140" cy="80" r="11" fill="#c9b8e8" opacity="0.18"/></g>
-          <g style="cursor:pointer;transform-origin:200px 60px" onclick="tapSvg(this,'pulse')"><circle cx="200" cy="60" r="7" fill="#f5d080" opacity="0.95"/><circle cx="200" cy="60" r="13" fill="#f5d080" opacity="0.2"/></g>
-          <g style="cursor:pointer;transform-origin:260px 90px" onclick="tapSvg(this,'pulse')"><circle cx="260" cy="90" r="5" fill="#80d0ff" opacity="0.95"/><circle cx="260" cy="90" r="9" fill="#80d0ff" opacity="0.18"/></g>
-          <g style="cursor:pointer;transform-origin:320px 55px" onclick="tapSvg(this,'pulse')"><circle cx="320" cy="55" r="5.5" fill="#ffd580" opacity="0.9"/><circle cx="320" cy="55" r="10" fill="#ffd580" opacity="0.18"/></g>
-          <g style="cursor:pointer;transform-origin:160px 120px" onclick="tapSvg(this,'pulse')"><circle cx="160" cy="120" r="4" fill="#ff9080" opacity="0.9"/><circle cx="160" cy="120" r="7" fill="#ff9080" opacity="0.18"/></g>
-          <g style="cursor:pointer;transform-origin:220px 110px" onclick="tapSvg(this,'pulse')"><circle cx="220" cy="110" r="4.5" fill="#a0ff80" opacity="0.9"/><circle cx="220" cy="110" r="8" fill="#a0ff80" opacity="0.18"/></g>
+          <g style="cursor:pointer;transform-origin:80px 50px" onclick="tapSvg(this,'pulse')">
+            <circle cx="80" cy="50" r="5" fill="#ffd580" opacity="0.95"/>
+            <circle cx="80" cy="50" r="9" fill="#ffd580" opacity="0.2"/>
+          </g>
+          <g style="cursor:pointer;transform-origin:140px 80px" onclick="tapSvg(this,'pulse')">
+            <circle cx="140" cy="80" r="6" fill="#c9b8e8" opacity="0.95"/>
+            <circle cx="140" cy="80" r="11" fill="#c9b8e8" opacity="0.18"/>
+          </g>
+          <g style="cursor:pointer;transform-origin:200px 60px" onclick="tapSvg(this,'pulse')">
+            <circle cx="200" cy="60" r="7" fill="#f5d080" opacity="0.95"/>
+            <circle cx="200" cy="60" r="13" fill="#f5d080" opacity="0.2"/>
+          </g>
+          <g style="cursor:pointer;transform-origin:260px 90px" onclick="tapSvg(this,'pulse')">
+            <circle cx="260" cy="90" r="5" fill="#80d0ff" opacity="0.95"/>
+            <circle cx="260" cy="90" r="9" fill="#80d0ff" opacity="0.18"/>
+          </g>
+          <g style="cursor:pointer;transform-origin:320px 55px" onclick="tapSvg(this,'pulse')">
+            <circle cx="320" cy="55" r="5.5" fill="#ffd580" opacity="0.9"/>
+            <circle cx="320" cy="55" r="10" fill="#ffd580" opacity="0.18"/>
+          </g>
+          <g style="cursor:pointer;transform-origin:160px 120px" onclick="tapSvg(this,'pulse')">
+            <circle cx="160" cy="120" r="4" fill="#ff9080" opacity="0.9"/>
+            <circle cx="160" cy="120" r="7" fill="#ff9080" opacity="0.18"/>
+          </g>
+          <g style="cursor:pointer;transform-origin:220px 110px" onclick="tapSvg(this,'pulse')">
+            <circle cx="220" cy="110" r="4.5" fill="#a0ff80" opacity="0.9"/>
+            <circle cx="220" cy="110" r="8" fill="#a0ff80" opacity="0.18"/>
+          </g>
           <ellipse cx="200" cy="195" rx="52" ry="18" fill="#2a1050" opacity="0.95"/>
           <path d="M170,165 Q200,140 230,165 L240,210 Q200,218 160,210 Z" fill="#3a1870"/>
           <path d="M178,155 Q200,145 222,155 L225,175 Q200,180 175,175 Z" fill="#4a2090"/>
@@ -618,6 +581,8 @@ html, body {
             <circle cx="340" cy="140" r="4" fill="#ffd580" opacity="0.95"/>
             <circle cx="340" cy="140" r="7" fill="#ffd580" opacity="0.2"/>
           </g>
+          <path d="M0,190 Q100,175 200,185 Q300,195 400,180" stroke="#4a90c0" stroke-width="12" fill="none" opacity="0.1"/>
+          <path d="M0,195 Q100,180 200,192 Q300,204 400,186" stroke="#7a68a8" stroke-width="8" fill="none" opacity="0.12"/>
         </svg>
       </div>
       <p class="tap-label">✦ tap the stars &amp; shooting star ✦</p>
@@ -625,7 +590,7 @@ html, body {
         They say there is a woman who weaves the stars each night —
         who decides which ones shine brighter, and which ones fall
         so that someone, somewhere, can make a wish.<br/><br/>
-        We always believed it was <strong>Mum</strong>.
+        We always believed it was <strong>{display_name}</strong>.
         Because everything good in our sky has your handwriting on it.
       </div>
     </div>
@@ -642,7 +607,8 @@ html, body {
         <svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <radialGradient id="mg4" cx="50%" cy="30%" r="70%">
-              <stop offset="0%" stop-color="#0a1830"/><stop offset="100%" stop-color="#060c1a"/>
+              <stop offset="0%" stop-color="#0a1830"/>
+              <stop offset="100%" stop-color="#060c1a"/>
             </radialGradient>
             <radialGradient id="lglow" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stop-color="#ffd580" stop-opacity="0.5"/>
@@ -708,7 +674,7 @@ html, body {
         <p class="pg-text">
           On every stormy night at sea, the sailors looked for one light.
           Not the brightest — the steadiest.<br/><br/>
-          That's what <strong>Mum</strong> has always been.
+          That's what <strong>{display_name}</strong> has always been.
           <strong>The light that never goes out</strong>.
           The one we navigate home by, no matter how far we've sailed.
         </p>
@@ -721,12 +687,12 @@ html, body {
     <div class="page-inner final-content" data-pi>
       <div class="pg-label">~ The End ~</div>
       <div class="big-heart" style="cursor:pointer" onclick="tap(this,'pulse')">💗</div>
-      <div id="final-photo"></div>
-      <h2 class="final-heading">Happy Mother's Day,<br/><span class="mum-name">Mum</span></h2>
+      {photo_html}
+      <h2 class="final-heading">Happy Mother's Day,<br/><span class="mum-name">{display_name}</span></h2>
       <div class="ornament" style="color:rgba(184,136,42,0.8)">✦ ✦ ✦</div>
       <p class="pg-text" style="color:rgba(240,220,180,0.75)">
         And they all lived, loved, and were grateful —
-        because <span class="mum-name" style="color:#e0807a">Mum</span> made every chapter worth reading.
+        because <span class="mum-name">{display_name}</span> made every chapter worth reading.
       </p>
       <div class="sparkle-row">🌙 ⭐ 🌸 ✨ 🌺</div>
       <p class="signature">With all our love ♡</p>
@@ -759,142 +725,82 @@ html, body {
     <div class="dots" id="dots"></div>
     <button class="nav-btn" id="nextBtn" onclick="navigate(1)">›</button>
   </div>
-</div><!-- end book-shell -->
+</div>
 
 <script>
-/* ── PHOTO OVERLAY ───────────────────────────────────────────────────── */
-function applyPhoto() {
-  const raw = document.getElementById('photo-url-input').value.trim();
-  if (!raw) { skipPhoto(); return; }
+const TOTAL = 5;
+let cur = 0;
+const strip   = document.getElementById('strip');
+const dotsEl  = document.getElementById('dots');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
 
-  // Convert Google Photos share links to direct-usable proxy
-  // Google Photos links (photos.app.goo.gl / photos.google.com) don't serve
-  // images directly — we show a helper note if detected.
-  const isGPhotos = /photos\.app\.goo\.gl|photos\.google\.com/.test(raw);
+for (let i = 0; i < TOTAL; i++) {{
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' on' : '');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+}}
 
-  const photoHTML = `<div class="cover-photo-wrap"><img src="${raw}" onerror="this.parentElement.innerHTML='<p style=\\'color:rgba(240,180,100,0.6);font-size:12px;font-style:italic;font-family:IM Fell English,serif\\'>⚠ Image could not load.<br>Use a direct image URL.</p>'"/></div>`;
+function goTo(n) {{
+  cur = Math.max(0, Math.min(TOTAL - 1, n));
+  strip.style.transform = `translateX(${{-cur * 100}}%)`;
+  prevBtn.disabled = cur === 0;
+  nextBtn.disabled = cur === TOTAL - 1;
+  dotsEl.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('on', i === cur));
+  const inner = strip.children[cur].querySelector('[data-pi]');
+  if (inner) {{
+    inner.classList.remove('vis');
+    requestAnimationFrame(() => requestAnimationFrame(() => inner.classList.add('vis')));
+  }}
+}}
+window.navigate = function(dir) {{ goTo(cur + dir); }};
 
-  document.getElementById('cover-photo').innerHTML = photoHTML;
-  document.getElementById('final-photo').innerHTML = photoHTML;
+// swipe support
+let sx = 0, sy = 0;
+const wrap = document.getElementById('strip-wrap');
+wrap.addEventListener('touchstart', e => {{ sx = e.touches[0].clientX; sy = e.touches[0].clientY; }}, {{passive:true}});
+wrap.addEventListener('touchend',   e => {{
+  const dx = e.changedTouches[0].clientX - sx;
+  const dy = e.changedTouches[0].clientY - sy;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 38) navigate(dx < 0 ? 1 : -1);
+}}, {{passive:true}});
+document.addEventListener('keydown', e => {{
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft')  navigate(-1);
+}});
 
-  if (isGPhotos) {
-    showGPhotosNote();
-  } else {
-    openBook();
-  }
-}
+goTo(0);
 
-function showGPhotosNote() {
-  document.getElementById('photo-overlay').innerHTML = `
-    <h2 style="font-family:'Dancing Script',cursive;font-size:24px;color:#f5dfa0;">📸 Google Photos Note</h2>
-    <div class="howto" style="max-width:320px">
-      <p style="color:rgba(240,210,140,0.75);font-size:13px;line-height:1.9">
-        Google Photos share links don't display directly in browsers.<br><br>
-        <strong>To get a working image URL:</strong><br>
-        1. Open photo in Google Photos<br>
-        2. Right-click (or long-press) → <em>Copy image address</em><br>
-        3. Paste that URL here instead.<br><br>
-        Or use any image from the web ending in <em>.jpg / .png / .webp</em>
-      </p>
-    </div>
-    <button class="overlay-btn" onclick="resetOverlay()">← Try again</button>
-    <button class="skip-btn" onclick="openBook()">continue without photo</button>
-  `;
-}
-
-function resetOverlay() {
-  location.reload();
-}
-
-function skipPhoto() {
-  document.getElementById('cover-photo').innerHTML = '';
-  document.getElementById('final-photo').innerHTML = '';
-  openBook();
-}
-
-function openBook() {
-  document.getElementById('photo-overlay').style.display = 'none';
-  document.getElementById('book-shell').style.display = 'block';
-  initBook();
-}
-
-/* ── BOOK LOGIC ──────────────────────────────────────────────────────── */
-function initBook() {
-  const TOTAL = 6;
-  let cur = 0;
-  const strip   = document.getElementById('strip');
-  const dotsEl  = document.getElementById('dots');
-  const prevBtn = document.getElementById('prevBtn');
-  const nextBtn = document.getElementById('nextBtn');
-
-  for (let i = 0; i < TOTAL; i++) {
-    const d = document.createElement('div');
-    d.className = 'dot' + (i === 0 ? ' on' : '');
-    d.onclick = () => goTo(i);
-    dotsEl.appendChild(d);
-  }
-
-  function goTo(n) {
-    cur = Math.max(0, Math.min(TOTAL - 1, n));
-    strip.style.transform = `translateX(${-cur * 100}%)`;
-    prevBtn.disabled = cur === 0;
-    nextBtn.disabled = cur === TOTAL - 1;
-    dotsEl.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('on', i === cur));
-    // scroll page to top
-    const page = strip.children[cur];
-    if (page) page.scrollTop = 0;
-    const inner = page && page.querySelector('[data-pi]');
-    if (inner) {
-      inner.classList.remove('vis');
-      requestAnimationFrame(() => requestAnimationFrame(() => inner.classList.add('vis')));
-    }
-  }
-
-  window.navigate = function(dir) { goTo(cur + dir); };
-
-  // swipe
-  let sx = 0, sy = 0;
-  const wrap = document.getElementById('strip-wrap');
-  wrap.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
-  wrap.addEventListener('touchend',   e => {
-    const dx = e.changedTouches[0].clientX - sx;
-    const dy = e.changedTouches[0].clientY - sy;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 38) navigate(dx < 0 ? 1 : -1);
-  }, {passive:true});
-  document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowRight') navigate(1);
-    if (e.key === 'ArrowLeft')  navigate(-1);
-  });
-
-  goTo(0);
-
-  // stars
-  (function() {
-    const s = document.getElementById('stars');
-    for (let i = 0; i < 50; i++) {
-      const el = document.createElement('div');
-      el.className = 'star';
-      const size = Math.random() * 2.5 + 1;
-      const colors = ['#ffd580','white','#c9b8e8','#80d0ff'];
-      el.style.cssText =
-        `left:${Math.random()*100}%;top:${Math.random()*100}%;` +
-        `width:${size}px;height:${size}px;` +
-        `background:${colors[Math.floor(Math.random()*colors.length)]};` +
-        `animation-duration:${Math.random()*4+2}s;` +
-        `animation-delay:${Math.random()*5}s;`;
-      s.appendChild(el);
-    }
-  })();
-}
-
-/* ── TAP ANIMATIONS ──────────────────────────────────────────────────── */
-window.tap = function(el, type) {
+// tap animations
+window.tap = function(el, type) {{
   el.classList.remove('sparkle','bloom','float-up','wiggle','pulse');
   void el.offsetWidth;
   el.classList.add(type);
-  el.addEventListener('animationend', () => el.classList.remove(type), {once:true});
-};
+  el.addEventListener('animationend', () => el.classList.remove(type), {{once:true}});
+}};
 window.tapSvg = window.tap;
+
+// twinkling stars
+(function() {{
+  const s = document.getElementById('stars');
+  for (let i = 0; i < 40; i++) {{
+    const el = document.createElement('div');
+    el.className = 'star';
+    const size = Math.random() * 2.5 + 1;
+    const colors = ['#ffd580','white','#c9b8e8','#80d0ff'];
+    el.style.cssText =
+      `left:${{Math.random()*100}}%;top:${{Math.random()*100}}%;` +
+      `width:${{size}}px;height:${{size}}px;` +
+      `background:${{colors[Math.floor(Math.random()*colors.length)]}};` +
+      `animation-duration:${{Math.random()*4+2}}s;` +
+      `animation-delay:${{Math.random()*5}}s;`;
+    s.appendChild(el);
+  }}
+}})();
 </script>
 </body>
-</html>
+</html>"""
+
+# ── Render inside an iframe — <style> tags are NEVER stripped here ─────────────
+st_html(BOOK_HTML, height=600, scrolling=False)
